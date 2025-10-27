@@ -1,0 +1,62 @@
+name: Daily Auto Commit
+
+on:
+  schedule:
+    # 这是一个 cron 表达式，表示在每天的 UTC 时间 1:00 (北京时间9点) 运行。
+    # 你可以根据需要修改时间，例如 '0 4 * * *' 代表 UTC 时间凌晨4点。
+    # 为了让提交时间看起来更“随机”，你也可以使用更复杂的 cron 表达式。
+    - cron: '0 1 * * *'
+  # 同时也允许你手动触发此工作流，方便测试
+  workflow_dispatch:
+
+jobs:
+  auto-commit-job:
+    runs-on: ubuntu-latest
+    
+    # 授予工作流向仓库写入内容的权限
+    permissions:
+      contents: write
+
+    steps:
+      # 第一步：检出你的仓库代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 第二步：设置 Git 用户信息
+      # 请将 "Your Name" 和 "your-email@example.com" 替换为你自己的 GitHub 用户名和邮箱
+      # 建议使用 GitHub 提供的 noreply 邮箱，格式为：<ID+username>@users.noreply.github.com
+      - name: Set up Git
+        run: |
+          git config --global user.name "iamwsll"
+          git config --global user.email "154515012+iamwsll@users.noreply.github.com"
+
+      # 第三步：创建随机数量的 Commit
+      - name: Create random commits
+        run: |
+          # 清空日志文件，避免其无限增大
+          > contribution_log.md
+          
+          # 设置当天最大 commit 次数
+          MAX_COMMITS=8
+          
+          # 生成 5 到 MAX_COMMITS +1之间的随机数
+          NUM_COMMITS=$((RANDOM % MAX_COMMITS + 5))
+          
+          echo "✅ Today we are making $NUM_COMMITS commits."
+          
+          # 循环执行 commit
+          for i in $(seq 1 $NUM_COMMITS)
+          do
+            # 修改文件以创建变更
+            echo "Commit $i on $(date) with random value $RANDOM" >> contribution_log.md
+            git add contribution_log.md
+            
+            # 创建 commit
+            git commit -m "chore: auto commit $i of $NUM_COMMITS for today,random:$RANDOM"
+          done
+
+      # 第四步：将所有 commit 推送到远程仓库
+      - name: Push changes
+        run: |
+          # 将本地 commit 推送到你的默认分支（通常是 main 或 master）
+          git push
